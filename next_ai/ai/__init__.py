@@ -4,8 +4,8 @@ import time
 from langchain_google_genai import ChatGoogleGenerativeAI
 from google.api_core.exceptions import ResourceExhausted
 from frappe import _
-from nextai.ai.prompt import PROMPTS
-from nextai.ai.structured_output import NEXTAIBaseModel
+from next_ai.ai.prompt import PROMPTS
+from next_ai.ai.structured_output import NEXTAIBaseModel
 
 
 @frappe.whitelist(allow_guest=True)
@@ -181,6 +181,7 @@ class NextAILLM:
         for model in self.model_info:
             if model['model_name'] == current_model:
                 is_next = True
+                continue
             if is_next:
                 return model['model_name']
         return self.model_info[0]['model_name']
@@ -197,6 +198,11 @@ class NextAILLM:
                 if self.current_model == self.nextai_settings.model_name:
                     frappe.log_error(frappe.get_traceback(), "RPM limit reached for all models in NextAILLM.get_llm_response")
                     frappe.throw(_("RPM limit reached for all the models. Please try again later. Or Please upgrade your plan."))
+                self.nextai_settings.model_name = self.current_model
+                self.nextai_settings.save(
+                    ignore_permissions=True,
+                    ignore_version=True
+                )
                 return self.get_structured_output_llm(model_name=self.current_model)
             else:
                 frappe.throw(_(f"RPM limit reached for the current model {self.current_model}. Please try again later."))
